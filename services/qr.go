@@ -30,16 +30,16 @@ func (s *Service) GenerateQRCode() (*models.QRCode, error) {
 
 	// Insert into database
 	qrSQL := `INSERT INTO qr_codes (token, url, image, valid) VALUES (?, ?, ?, ?) RETURNING id`
-	var id int
-	if err := s.db.Raw(qrSQL, token, "", imagePath, true).Scan(&id).Error; err != nil {
+	var qrCode models.QRCode
+	if err := s.db.Raw(qrSQL, token, "", imagePath, true).Scan(&qrCode.ID).Error; err != nil {
 		return nil, err
 	}
 
-	// Return the stored QRCode object
-	return &models.QRCode{
-		ID:    id,
-		Token: token,
-		Image: imagePath,
-		Valid: true,
-	}, nil
+	// Retrieve the stored QRCode object from the database
+	if err := s.db.Raw(`SELECT id, token, url, image, valid, created_at FROM qr_codes WHERE id = ?`, qrCode.ID).
+		Scan(&qrCode).Error; err != nil {
+		return nil, err
+	}
+
+	return &qrCode, nil
 }
