@@ -26,10 +26,10 @@ The **QR-Code-Backend** is responsible for managing QR code tokens. Its primary 
 
 The backend provides the following endpoints:
 
-- **/generate:** Creates a new QR token.
-- **/validate:** Checks if a provided QR token is valid.
-- **/invalidate:** Marks a QR token as invalid.
-- **/delete:** Permanently removes a QR token from the system.
+- **/api/qr-code/generate:** Creates a new QR token.
+- **/api/qr-code/validate:** Checks if a provided QR token is valid.
+- **/api/qr-code/invalidate:** Marks a QR token as invalid.
+- **/api/qr-code/delete:** Permanently removes a QR token from the system.
 
 ---
 
