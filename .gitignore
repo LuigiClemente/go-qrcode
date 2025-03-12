@@ -1,0 +1,4 @@
+*.log
+*.exe
+/qr_images
+note.md
