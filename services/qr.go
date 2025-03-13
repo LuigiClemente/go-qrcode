@@ -66,3 +66,28 @@ func (s *Service) InvalidateQRCode(token string) error {
 
 	return nil
 }
+
+// Permanently removes a QR token from the system.
+func (s *Service) DeleteQRCode(token string) error {
+	// Retrieve the image path before deleting the record
+	var imagePath string
+	err := s.db.Raw(`SELECT image FROM qr_codes WHERE token = ?`, token).Scan(&imagePath).Error
+	if err != nil {
+		return fmt.Errorf("failed to retrieve QR code image path: %w", err)
+	}
+
+	// Delete the QR code record from the database
+	err = s.db.Exec(`DELETE FROM qr_codes WHERE token = ?`, token).Error
+	if err != nil {
+		return fmt.Errorf("failed to delete QR code from database: %w", err)
+	}
+
+	// Remove the QR code image file if it exists
+	if imagePath != "" {
+		if err := os.Remove(imagePath); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("failed to delete QR code image file: %w", err)
+		}
+	}
+
+	return nil
+}

@@ -36,8 +36,8 @@ func (h *Handler) ValidateQRCode(c *gin.Context) {
 }
 
 func (h *Handler) InvalidateQRCode(c *gin.Context) {
-	// Get the token from the request query parameter
-	token := c.Query("token")
+	// Get the token from the URL path parameter
+	token := c.Param("token")
 	if token == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Token is required"})
 		return
@@ -51,4 +51,22 @@ func (h *Handler) InvalidateQRCode(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "QR code invalidated successfully"})
+}
+
+func (h *Handler) DeleteQRCode(c *gin.Context) {
+	// Get the token from the URL path parameter
+	token := c.Param("token")
+	if token == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Token is required"})
+		return
+	}
+
+	// Delete the QR code
+	err := h.service.DeleteQRCode(token)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "QR code deleted successfully"})
 }
