@@ -56,4 +56,13 @@ func (s *Service) ValidateQRCode(token string) (bool, error) {
 	return valid, nil
 }
 
+// Marks a QR token as invalid
+func (s *Service) InvalidateQRCode(token string) error {
+	// Update the database to mark the QR code as invalid
+	err := s.db.Exec(`UPDATE qr_codes SET valid = false WHERE token = ?`, token).Error
+	if err != nil {
+		return fmt.Errorf("failed to invalidate QR code: %w", err)
+	}
 
+	return nil
+}

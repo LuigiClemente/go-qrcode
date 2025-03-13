@@ -23,6 +23,7 @@ func SetupRouter() *gin.Engine {
 		qrCodeHandler := handlers.NewHandler()
 		qrCode.POST("/generate", qrCodeHandler.GenerateQRCode)
 		qrCode.POST("/validate", qrCodeHandler.ValidateQRCode)
+		qrCode.POST("/invalidate", qrCodeHandler.InvalidateQRCode)
 
 	}
 
