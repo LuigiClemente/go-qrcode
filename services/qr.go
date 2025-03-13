@@ -43,3 +43,17 @@ func (s *Service) GenerateQRCode() (*models.QRCode, error) {
 
 	return &qrCode, nil
 }
+
+// Checks if a provided QR token is valid
+func (s *Service) ValidateQRCode(token string) (bool, error) {
+	// Query the database to check if the QR code exists and is valid
+	var valid bool
+	err := s.db.Raw(`SELECT valid FROM qr_codes WHERE token = ?`, token).Scan(&valid).Error
+	if err != nil {
+		return false, fmt.Errorf("failed to validate QR code: %w", err)
+	}
+
+	return valid, nil
+}
+
+
