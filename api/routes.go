@@ -18,7 +18,7 @@ func SetupRouter() *gin.Engine {
 	router.Use(cors.New(config))
 
 	// Register routes
-	qrCode := router.Group("api/qr-code")
+	qrCode := router.Group("api/v1/qrcode-app")
 	{
 		qrCodeHandler := handlers.NewHandler()
 		qrCode.POST("/generate", qrCodeHandler.GenerateQRCode)

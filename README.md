@@ -14,7 +14,7 @@ The **QR-Code-Backend** is responsible for managing QR code tokens. Its primary 
 ## Base URL
 
 ```
-http://<your-server-address>/api/qr-code
+http://<your-server-address>/api/v1/qrcode-app
 ```
 
 ## Endpoints
