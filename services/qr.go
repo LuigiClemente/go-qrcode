@@ -4,93 +4,77 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"os"
 	"qr-code-backend/models"
-	"time"
 
+	"github.com/google/uuid"
 	"github.com/skip2/go-qrcode"
 )
 
+// GenerateQRCode creates a QR code, converts it to a Data URL, and stores it in the database.
 func (s *Service) GenerateQRCode() (*models.QRCode, error) {
-	// Generate unique token
-	token := fmt.Sprintf("qr-%d", time.Now().UnixNano())
+	token := uuid.New().String()
+	url := fmt.Sprintf("https://matomo.gutricious.com/validate/%s", token)
 
 	// Generate QR code
-	qr, err := qrcode.New(token, qrcode.Medium)
+	qr, err := qrcode.New(url, qrcode.Medium)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate QR code: %w", err)
 	}
 
 	// Encode QR code as PNG in a buffer
 	var buf bytes.Buffer
-	err = qr.Write(256, &buf)
-	if err != nil {
+	if err := qr.Write(256, &buf); err != nil {
 		return nil, fmt.Errorf("failed to write QR code to buffer: %w", err)
 	}
 
-	// Convert buffer to Base64 string
-	base64Image := base64.StdEncoding.EncodeToString(buf.Bytes())
+	// Convert buffer to Base64 and format as Data URL
+	base64Image := "data:image/png;base64," + base64.StdEncoding.EncodeToString(buf.Bytes())
 
-	// Insert into database
-	qrSQL := `INSERT INTO qr_codes (token, url, image, valid) VALUES (?, ?, ?, ?) RETURNING id`
-	var qrCode models.QRCode
-	if err := s.db.Raw(qrSQL, token, "", base64Image, true).Scan(&qrCode.ID).Error; err != nil {
-		return nil, err
+	// Insert into database and return the created QRCode object
+	qrCode := models.QRCode{
+		Token: token,
+		Url:   url,
+		Image: base64Image, // Storing as Data URL
+		Valid: true,
 	}
 
-	// Retrieve the stored QRCode object from the database
-	if err := s.db.Raw(`SELECT id, token, url, image, valid, created_at FROM qr_codes WHERE id = ?`, qrCode.ID).
-		Scan(&qrCode).Error; err != nil {
-		return nil, err
+	if err := s.db.Create(&qrCode).Error; err != nil {
+		return nil, fmt.Errorf("failed to save QR code: %w", err)
 	}
 
 	return &qrCode, nil
 }
 
-// Checks if a provided QR token is valid
+// ValidateQRCode checks if the provided QR token is valid.
 func (s *Service) ValidateQRCode(token string) (bool, error) {
-	// Query the database to check if the QR code exists and is valid
 	var valid bool
-	err := s.db.Raw(`SELECT valid FROM qr_codes WHERE token = ?`, token).Scan(&valid).Error
-	if err != nil {
+	if err := s.db.Model(&models.QRCode{}).Select("valid").Where("token = ?", token).Scan(&valid).Error; err != nil {
 		return false, fmt.Errorf("failed to validate QR code: %w", err)
 	}
-
 	return valid, nil
 }
 
-// Marks a QR token as invalid
+// InvalidateQRCode marks a QR token as invalid.
 func (s *Service) InvalidateQRCode(token string) error {
-	// Update the database to mark the QR code as invalid
-	err := s.db.Exec(`UPDATE qr_codes SET valid = false WHERE token = ?`, token).Error
-	if err != nil {
-		return fmt.Errorf("failed to invalidate QR code: %w", err)
-	}
+	return s.updateQRCodeValidity(token, false)
+}
 
+// DeleteQRCode permanently removes a QR token from the database.
+func (s *Service) DeleteQRCode(token string) error {
+	if err := s.db.Where("token = ?", token).Delete(&models.QRCode{}).Error; err != nil {
+		return fmt.Errorf("failed to delete QR code: %w", err)
+	}
 	return nil
 }
 
-// Permanently removes a QR token from the system.
-func (s *Service) DeleteQRCode(token string) error {
-	// Retrieve the image path before deleting the record
-	var imagePath string
-	err := s.db.Raw(`SELECT image FROM qr_codes WHERE token = ?`, token).Scan(&imagePath).Error
-	if err != nil {
-		return fmt.Errorf("failed to retrieve QR code image path: %w", err)
+// updateQRCodeValidity updates the validity status of a QR code.
+func (s *Service) updateQRCodeValidity(token string, valid bool) error {
+	result := s.db.Model(&models.QRCode{}).Where("token = ?", token).Update("valid", valid)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update QR code validity: %w", result.Error)
 	}
-
-	// Delete the QR code record from the database
-	err = s.db.Exec(`DELETE FROM qr_codes WHERE token = ?`, token).Error
-	if err != nil {
-		return fmt.Errorf("failed to delete QR code from database: %w", err)
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("QR code not found")
 	}
-
-	// Remove the QR code image file if it exists
-	if imagePath != "" {
-		if err := os.Remove(imagePath); err != nil && !os.IsNotExist(err) {
-			return fmt.Errorf("failed to delete QR code image file: %w", err)
-		}
-	}
-
 	return nil
 }
