@@ -15,7 +15,7 @@ CREATE TABLE users (
 -- QrCode Table
 CREATE TABLE qr_codes (
     id SERIAL PRIMARY KEY,
-    token TEXT,
+    token TEXT UNIQUE,
     url TEXT,
     image TEXT,
     valid boolean,
