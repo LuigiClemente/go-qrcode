@@ -1,9 +1,10 @@
 package services
 
 import (
+	"bytes"
+	"encoding/base64"
 	"fmt"
 	"os"
-	"path/filepath"
 	"qr-code-backend/models"
 	"time"
 
@@ -14,24 +15,26 @@ func (s *Service) GenerateQRCode() (*models.QRCode, error) {
 	// Generate unique token
 	token := fmt.Sprintf("qr-%d", time.Now().UnixNano())
 
-	// Define image directory and file path
-	imageDir := "./qr_images"
-	if err := os.MkdirAll(imageDir, os.ModePerm); err != nil {
-		return nil, fmt.Errorf("failed to create directory: %w", err)
-	}
-
-	imagePath := filepath.Join(imageDir, token+".png")
-
-	// Generate and save the QR code image
-	err := qrcode.WriteFile(token, qrcode.Medium, 256, imagePath)
+	// Generate QR code
+	qr, err := qrcode.New(token, qrcode.Medium)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate QR code: %w", err)
 	}
 
+	// Encode QR code as PNG in a buffer
+	var buf bytes.Buffer
+	err = qr.Write(256, &buf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to write QR code to buffer: %w", err)
+	}
+
+	// Convert buffer to Base64 string
+	base64Image := base64.StdEncoding.EncodeToString(buf.Bytes())
+
 	// Insert into database
 	qrSQL := `INSERT INTO qr_codes (token, url, image, valid) VALUES (?, ?, ?, ?) RETURNING id`
 	var qrCode models.QRCode
-	if err := s.db.Raw(qrSQL, token, "", imagePath, true).Scan(&qrCode.ID).Error; err != nil {
+	if err := s.db.Raw(qrSQL, token, "", base64Image, true).Scan(&qrCode.ID).Error; err != nil {
 		return nil, err
 	}
 
