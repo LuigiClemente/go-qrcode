@@ -27,12 +27,5 @@ func SetupRouter() *gin.Engine {
 		qrCode.DELETE("/qr/:token", qrCodeHandler.DeleteQRCode)
 	}
 
-	auth := router.Group("api/v1/auth")
-	{
-		auth.POST("/signup", handlers.SignupUser)
-		auth.POST("/login", handlers.LoginUser)
-		auth.POST("/forgot-password", handlers.ForgotPassword)
-	}
-
 	return router
 }
