@@ -22,9 +22,9 @@ func SetupRouter() *gin.Engine {
 	{
 		qrCodeHandler := handlers.NewHandler()
 		qrCode.POST("/generate", qrCodeHandler.GenerateQRCode)
-		qrCode.GET("/validate/:token", qrCodeHandler.ValidateQRCode)
+		qrCode.GET("/validate/token", qrCodeHandler.ValidateQRCode)
 		qrCode.POST("/invalidate", qrCodeHandler.InvalidateQRCode)
-		qrCode.DELETE("/qr/:token", qrCodeHandler.DeleteQRCode)
+		qrCode.DELETE("/qr/token", qrCodeHandler.DeleteQRCode)
 	}
 
 	auth := router.Group("api/v1/auth")

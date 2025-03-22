@@ -18,8 +18,8 @@ func (h *Handler) GenerateQRCode(c *gin.Context) {
 }
 
 func (h *Handler) ValidateQRCode(c *gin.Context) {
-	// Get the token from the request query parameter
-	token := c.Query("token")
+	// Get the token from the request Param parameter
+	token := c.Param("token")
 	if token == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Token is required"})
 		return
